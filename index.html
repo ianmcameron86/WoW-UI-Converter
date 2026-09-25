@@ -45,6 +45,9 @@ ul.log{margin:8px 0 0;padding-left:18px;font-size:14px}
 .brow .acts{display:flex;gap:6px}
 button.danger{background:transparent;color:var(--err);border:1px solid var(--line);font:inherit;border-radius:8px;padding:8px 14px;cursor:pointer}
 .note{border-left:3px solid var(--warn);padding:8px 12px;background:var(--field);border-radius:0 8px 8px 0;font-size:14px}
+footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line)}
+footer p{margin:0}
+a{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -136,6 +139,10 @@ button.danger{background:transparent;color:var(--err);border:1px solid var(--lin
     <div id="backupList" class="status muted">Choose your World of Warcraft folder at the top of the page to see your backups.</div>
   </div>
 </section>
+
+<footer>
+  <p class="muted">Something not working? <a id="bugLink" href="https://github.com/ianmcameron86/WoW-UI-Converter/issues/new" target="_blank" rel="noopener">Report a bug</a>. The report is prefilled with your browser, which game versions were found, and the shape of the layouts you converted. It never includes your account name, character names, file paths or the layouts themselves. You'll need a free GitHub account to post it.</p>
+</footer>
 </main>
 
 <script>
@@ -246,6 +253,7 @@ $('pick').onclick = async () => {
   ['chooseCard', 'goCard'].forEach(id => { $(id).style.opacity = 1; $(id).style.pointerEvents = 'auto'; });
   fillAccounts('src'); fillAccounts('dst');
   scanBackups();
+  refreshBugLink();
 };
 
 function fillAccounts(side) {
@@ -397,12 +405,66 @@ $('convert').onclick = () => {
     if (report.dropped.length) parts.push(report.dropped.length > 1 ? `${report.dropped.length} elements from your layout don't exist in the destination and were skipped.` : `1 element from your layout doesn't exist in the destination and was skipped.`);
     if (report.keptTarget.length) parts.push(report.keptTarget.length > 1 ? `${report.keptTarget.length} elements only exist in the destination and stay at its defaults.` : `1 element only exists in the destination and stays at its default.`);
     $('lStatus').innerHTML = parts.join(' ');
-  } catch (e) { $('lStatus').innerHTML = `<span class="err">${e.message}</span>`; }
+    noteConversion(src, tgt, `moved ${report.moved}, settings ${report.settings}, dropped ${report.dropped.length}, kept from destination ${report.keptTarget.length}`);
+  } catch (e) {
+    $('lStatus').innerHTML = `<span class="err">${e.message}</span>`;
+    noteConversion(src, tgt, 'ERROR: ' + e.message);
+  }
 };
 $('copyOut').onclick = async () => {
   try { await navigator.clipboard.writeText($('lOut').value); $('copyStatus').innerHTML = '<span class="ok">Copied</span>'; }
   catch { $('lOut').select(); $('copyStatus').textContent = 'Press Ctrl+C to copy'; }
 };
+
+// ---------- Report a bug ----------
+// Everything here is deliberately non-identifying. Install folder names like
+// _retail_ are fine. Account names, character names, realms, file paths and the
+// layout strings themselves are never included.
+const REPO = 'https://github.com/ianmcameron86/WoW-UI-Converter';
+let lastConversion = null;
+
+// The shape of a layout, never its contents.
+const layoutShape = s => {
+  if (!s) return 'empty';
+  try { const p = WoWLayout.parseLayout(s); return `header "${p.header.join(' ')}", ${p.entries.length} entries`; }
+  catch { return `unrecognised (${s.split(/\s+/).length} tokens)`; }
+};
+function noteConversion(src, tgt, result) {
+  lastConversion = { from: layoutShape(src), to: layoutShape(tgt), result };
+  refreshBugLink();
+}
+
+function diagnostics() {
+  const tab = document.querySelector('.tab[aria-selected="true"]');
+  const out = [
+    `Page: ${location.origin}${location.pathname}`,
+    `Browser: ${navigator.userAgent}`,
+    `Folder access: ${window.showDirectoryPicker ? 'available' : 'NOT available'}${navigator.brave ? ', Brave detected' : ''}`,
+    `Tab: ${tab ? tab.textContent.trim() : 'unknown'}`,
+    `Game versions found: ${installs.length ? installs.map(i => i.name).join(', ') : 'none, folder not chosen'}`,
+  ];
+  if (lastConversion) out.push(
+    `Last conversion from: ${lastConversion.from}`,
+    `Last conversion to:   ${lastConversion.to}`,
+    `Last conversion result: ${lastConversion.result}`);
+  return out.join('\n');
+}
+
+function issueUrl() {
+  const body = [
+    '**What happened?**', '', '',
+    '**What did you expect to happen?**', '', '',
+    '**Which game versions were you copying between?**', '', '',
+    '---', '', 'Filled in automatically. No account names, character names, file paths or layout contents:', '',
+    '```', diagnostics(), '```',
+  ].join('\n');
+  return `${REPO}/issues/new?title=${encodeURIComponent('Bug: ')}&body=${encodeURIComponent(body)}`;
+}
+const refreshBugLink = () => { $('bugLink').href = issueUrl(); };
+// Keep it current for a normal click, a middle click or "copy link address".
+$('bugLink').addEventListener('mousedown', refreshBugLink);
+$('bugLink').addEventListener('focus', refreshBugLink);
+refreshBugLink();
 </script>
 </body>
 </html>

@@ -45,6 +45,14 @@ Layout imports don't need backups. The game saves an imported layout as a new la
 
 If a version or account doesn't show up, log into that version once and log out normally so WoW creates its folders.
 
+## Found a bug?
+
+There's a **Report a bug** link at the bottom of the page. It opens a new GitHub issue with a few details already filled in: your browser, which game versions were found, and the shape of the layouts you converted (the header and how many elements, not the layouts themselves).
+
+It never includes your account name, character names, realm names, file paths, or any layout contents.
+
+You'll need a free GitHub account to post the issue.
+
 ## Notes
 
 - Needs Chrome or Edge on desktop, because they let a web page open a folder. Brave works too once you turn on `brave://flags/#file-system-access-api` and restart it. Firefox and Safari can't open folders. The HUD layout tab works in any browser.
