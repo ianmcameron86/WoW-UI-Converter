@@ -28,7 +28,8 @@ A summary of the chat where this project started (Sept 24, 2026), in order.
 
 - **Where the files were:** Ian's Retail keybinds were account-wide at `_retail_\WTF\Account\<ACCOUNT>\bindings-cache.wtf`. His character folders had none.
 - **The copy:** he copied that file into `_classic_beta_\WTF\Account\<ACCOUNT>\`. It worked, and all his keys showed on the beta bars.
-- **The server copy:** `SET synchronizeBindings "0"` in `Config.wtf` stops the server copy from overwriting the local file. This was suggested as a fallback. Whether Forever needs it isn't confirmed.
+- **The server copy:** `SET synchronizeBindings "0"` in `Config.wtf` stops the server copy from overwriting the local file. This was suggested as a fallback at the time.
+- **It turned out not to be a fallback (confirmed Sept 24, 2026).** Ian's copied Forever keybinds worked at first and then vanished in-game. On disk the file was 0 bytes, with the copy moved to `bindings-cache.old` three minutes later, on logout. He had copied by hand, so `synchronizeBindings` was never set. Forever does need it. The tool ticks that box by default.
 
 ## 3. Building the tool
 
