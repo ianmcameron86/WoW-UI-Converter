@@ -64,6 +64,12 @@ It never includes your account name, character names, realm names, file paths, o
 
 Posting an issue needs a free GitHub account. Discord doesn't, so use whichever is easier.
 
+## Privacy
+
+Your keybinds and layouts never leave your computer. The copying happens in your browser, against the folder you chose, and none of it is uploaded.
+
+The page can count anonymous visits, using [GoatCounter](https://www.goatcounter.com/), so the author knows whether anyone's using it. No cookies, no IP addresses stored, nothing that identifies you, and it never sees your WoW files or anything you paste in. It's switched on by setting `VISIT_COUNTER` in `src/page.html`; left empty, no request is made at all and the page says nothing about counting.
+
 ## Notes
 
 - Needs Chrome or Edge on desktop, because they let a web page open a folder. Brave works too once you turn on `brave://flags/#file-system-access-api` and restart it. Firefox and Safari can't open folders. The HUD layout tab works in any browser.

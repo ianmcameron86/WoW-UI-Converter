@@ -61,7 +61,7 @@ a{color:var(--accent)}
 
   <div class="card">
     <h2>Start here: choose your World of Warcraft folder</h2>
-    <p class="muted">Pick the folder that contains <code>_retail_</code>, <code>_classic_</code> and so on. On a default install that's <code>C:\Program Files (x86)\World of Warcraft</code>. The browser will ask to let this page view and edit files there. Nothing leaves your computer. You only need this for keybinds and backups. The HUD layout tab works without it.</p>
+    <p class="muted">Pick the folder that contains <code>_retail_</code>, <code>_classic_</code> and so on. On a default install that's <code>C:\Program Files (x86)\World of Warcraft</code>. The browser will ask to let this page view and edit files there. Your keybinds and layouts never leave your computer: all the copying happens here in the browser, and none of it is uploaded anywhere. You only need this for keybinds and backups. The HUD layout tab works without it.</p>
     <div class="row"><button class="primary" id="pick">Choose folder</button><span id="pickStatus" class="status"></span></div>
   </div>
 
@@ -164,6 +164,7 @@ a{color:var(--accent)}
 
 <footer>
   <p class="muted">Something not working? <a id="bugLink" href="https://github.com/ianmcameron86/WoW-UI-Converter/issues/new" target="_blank" rel="noopener">Report a bug</a>, or message me on Discord: <code>thesaint</code>. The bug report is prefilled with your browser, which game versions were found, and the shape of the layouts you converted. It never includes your account name, character names, file paths or the layouts themselves. Posting it needs a free GitHub account; Discord doesn't.</p>
+  <p class="muted hidden" id="countingNote" style="margin-top:8px">This site counts anonymous visits so I know whether anyone's using it. No cookies, no IP addresses stored, and it never sees your WoW files or anything you paste in.</p>
 </footer>
 </main>
 
@@ -499,6 +500,24 @@ function issueUrl() {
   ].join('\n');
   return `${REPO}/issues/new?title=${encodeURIComponent('Bug: ')}&body=${encodeURIComponent(body)}`;
 }
+// ---------- Anonymous visit counting ----------
+// GoatCounter: counts visits and daily unique visitors. No cookies, and it
+// doesn't store IP addresses. It never sees your WoW files, your folder, or
+// anything you paste in: it only records that a page was opened.
+// To switch it on, put your own endpoint here, e.g.
+//   'https://yourname.goatcounter.com/count'
+// Left empty, nothing is loaded and no request is made.
+const VISIT_COUNTER = '';
+if (VISIT_COUNTER) {
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter', VISIT_COUNTER);
+  document.head.appendChild(s);
+  // Only say visits are counted when they actually are.
+  $('countingNote').classList.remove('hidden');
+}
+
 const refreshBugLink = () => { $('bugLink').href = issueUrl(); };
 // Keep it current for a normal click, a middle click or "copy link address".
 $('bugLink').addEventListener('mousedown', refreshBugLink);
