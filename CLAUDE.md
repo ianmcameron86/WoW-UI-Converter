@@ -36,13 +36,35 @@ docs/                 project-history.md, layout-string-format.md, addon-plan.md
 
 ## Workflow
 
+For the web tool:
+
 1. Edit files in `src/` (or `README.md`).
-2. `node build.js` (needs Node.js. If it's missing, ask Ian before installing it.)
+2. `node build.js`
 3. `node tests/layout.test.js`. All tests must pass.
 4. Check the page in a browser if the UI changed.
 5. Commit, then push to `main` when Ian says to (or once he approves the change). GitHub Pages updates about a minute after the push.
 
-Git runs on Ian's PC with his own GitHub sign-in (Git Credential Manager). Never ask him to paste a token into chat.
+For addon Lua in `addon/`:
+
+- `luajit -bl <file> NUL` parses a file and prints nothing if it's fine. LuaJIT is Lua 5.1, the same dialect WoW uses, so this catches real syntax errors before the game does. It only checks syntax: it can't tell you whether a WoW API exists.
+
+`node build.js` rewrites `index.html`, so check `git diff` afterwards. Note the byte count it prints is one less than the file size, because `index.html` contains one non-ASCII character (`·`). That's normal, not a build problem.
+
+## Tools installed
+
+Installed on Ian's PC on 2026-09-24, with his go-ahead, via winget:
+
+- **Node.js** 24.19.0 LTS (`C:\Program Files\nodejs`) for the build and tests
+- **Python** 3.13.15 (`%LOCALAPPDATA%\Programs\Python\Python313`)
+- **LuaJIT** 2.1 (`%LOCALAPPDATA%\Programs\LuaJIT\bin`) for syntax-checking addon Lua
+
+A shell started before these were installed won't have them on `PATH`. In PowerShell, reload it with:
+
+```
+$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
+```
+
+Git runs on Ian's PC with his own GitHub sign-in (Git Credential Manager). Never ask him to paste a token into chat. Commits are authored as `ianmcameron86 <ianmcameron86@gmail.com>`, set repo-locally to match the commits Ian made through the GitHub web UI.
 
 ## Layout conversion (the key idea)
 
