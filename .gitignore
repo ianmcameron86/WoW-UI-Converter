@@ -1,0 +1,6 @@
+# Screenshots include other players' names from in-game chat. Keep them local.
+reference/screenshots/
+node_modules/
+
+# Zipped copy of this project, carried over from the original chat. Local only.
+WoW-UI-Converter.zip

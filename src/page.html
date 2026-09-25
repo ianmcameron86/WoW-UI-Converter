@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WoW Settings Transfer</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1c1a;--muted:#6b675f;--line:#dedad2;--accent:#8a5a00;--accent-ink:#fff;--ok:#1f7a3a;--warn:#9a5b00;--err:#b3261e;--field:#fbfaf8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15140f;--card:#1f1d18;--ink:#ece8df;--muted:#a39d90;--line:#37332b;--accent:#e0a82e;--accent-ink:#1b1400;--ok:#5cc47c;--warn:#e0a82e;--err:#f08a80;--field:#191712}}
+:root[data-theme="dark"]{--bg:#15140f;--card:#1f1d18;--ink:#ece8df;--muted:#a39d90;--line:#37332b;--accent:#e0a82e;--accent-ink:#1b1400;--ok:#5cc47c;--warn:#e0a82e;--err:#f08a80;--field:#191712}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 24px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;font:inherit;color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{color:var(--ink);border-color:var(--accent);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 10px}
+.step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700;margin-right:8px}
+button.primary,button.secondary{font:inherit;border-radius:8px;padding:8px 14px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);font-weight:600}
+button.secondary{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:13px;color:var(--muted);margin:8px 0 4px}
+select,textarea{width:100%;font:inherit;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px}
+textarea{font:12px/1.4 ui-monospace,Consolas,monospace;min-height:110px;resize:vertical;word-break:break-all}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.check{display:flex;gap:8px;align-items:flex-start;margin-top:10px;color:var(--ink);font-size:14px}
+.check input{margin-top:4px}
+.status{font-size:14px;margin-top:10px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.err{color:var(--err)}
+.muted{color:var(--muted);font-size:13px}
+code{font:12.5px ui-monospace,Consolas,monospace;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+ul.log{margin:8px 0 0;padding-left:18px;font-size:14px}
+.hidden{display:none}
+.bgroup{margin-top:16px}
+.bgroup h3{font-size:14px;margin:0 0 6px}
+.brow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line)}
+.brow .what{min-width:0;overflow-wrap:anywhere}
+.brow .what small{display:block;color:var(--muted)}
+.brow .acts{display:flex;gap:6px}
+button.danger{background:transparent;color:var(--err);border:1px solid var(--line);font:inherit;border-radius:8px;padding:8px 14px;cursor:pointer}
+.note{border-left:3px solid var(--warn);padding:8px 12px;background:var(--field);border-radius:0 8px 8px 0;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>WoW Settings Transfer</h1>
+<p class="sub">Copy your keybinds and HUD layout from the World of Warcraft version you know to any other: Retail, WoW Forever, Classic, betas and PTRs, in any direction. Every file it replaces is backed up and can be restored with one click.</p>
+
+  <div id="unsupported" class="card hidden">
+    <p class="err">This browser can't open folders. Open this page in Chrome or Edge on a desktop computer. The HUD layout tab still works here.</p>
+  </div>
+
+  <div class="card">
+    <h2>Start here: choose your World of Warcraft folder</h2>
+    <p class="muted">Pick the folder that contains <code>_retail_</code>, <code>_classic_</code> and so on. On a default install that's <code>C:\Program Files (x86)\World of Warcraft</code>. The browser will ask to let this page view and edit files there. Nothing leaves your computer. You only need this for keybinds and backups. The HUD layout tab works without it.</p>
+    <div class="row"><button class="primary" id="pick">Choose folder</button><span id="pickStatus" class="status"></span></div>
+  </div>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-tab="keys">Keybinds</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="layout">HUD layout</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="restore">Backups &amp; restore</button>
+</div>
+
+<section id="tab-keys">
+  <div class="card" id="chooseCard" style="opacity:.5;pointer-events:none">
+    <h2><span class="step">1</span>Copy from and copy to</h2>
+    <div class="grid">
+      <div>
+        <strong>Copy from</strong>
+        <label for="srcInst">Game version</label><select id="srcInst"></select>
+        <label for="srcAcct">Account</label><select id="srcAcct"></select>
+        <div id="srcInfo" class="status muted"></div>
+      </div>
+      <div>
+        <strong>Copy to</strong>
+        <label for="dstInst">Game version</label><select id="dstInst"></select>
+        <label for="dstAcct">Account</label><select id="dstAcct"></select>
+        <div id="dstInfo" class="status muted"></div>
+      </div>
+    </div>
+    <div id="charBlock" class="hidden">
+      <p class="muted" style="margin-top:14px">Some characters on the source account have their own keybinds. To bring one over, pick it and a destination character. Leave these blank to copy only the account-wide keybinds.</p>
+      <div class="grid">
+        <div><label for="srcChar">Source character</label><select id="srcChar"></select></div>
+        <div><label for="dstChar">Destination character</label><select id="dstChar"></select></div>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="optSync" checked><span>Stop the destination game from replacing these keybinds with its server copy. This adds <code>SET synchronizeBindings "0"</code> to its <code>Config.wtf</code>.</span></label>
+  </div>
+
+  <div class="card" id="goCard" style="opacity:.5;pointer-events:none">
+    <h2><span class="step">2</span>Copy</h2>
+    <p class="note">Close both games first. WoW saves keybinds when you log out, so a running game will overwrite the copy.</p>
+    <div class="row"><button class="primary" id="go">Copy keybinds</button></div>
+    <ul class="log" id="log"></ul>
+  </div>
+</section>
+
+<section id="tab-layout" class="hidden">
+  <p class="note" style="margin-top:0">This works between any two versions that have Edit Mode (Esc > Edit Mode), such as Retail, WoW Forever and the newer Classic versions. Versions without Edit Mode, like Classic Era, have no layout string to copy, but their keybinds still transfer on the Keybinds tab.</p>
+  <div class="card">
+    <h2><span class="step">1</span>Your layout</h2>
+    <p class="muted">In the game you're copying from, open Edit Mode (Esc > Edit Mode), select your layout, then use the layout menu > Export and paste it here.</p>
+    <textarea id="lSrc" placeholder="Paste the layout you want to move"></textarea>
+  </div>
+  <div class="card">
+    <h2><span class="step">2</span>A layout from the game you're copying to</h2>
+    <p class="muted">In the other game, export any layout (the default Modern preset is best) and paste it here. The converter uses it as a starting point, so the result always matches what that game version accepts.</p>
+    <textarea id="lTgt" placeholder="Paste a layout exported from the destination game"></textarea>
+    <div class="row"><button class="secondary" id="useForever">Use the WoW Forever beta default</button></div>
+  </div>
+  <div class="card">
+    <h2><span class="step">3</span>Convert</h2>
+    <div class="row"><button class="primary" id="convert">Convert layout</button></div>
+    <div id="lStatus" class="status"></div>
+    <div id="lOutWrap" class="hidden">
+      <label for="lOut">Converted layout. Copy it, then in the destination game use Edit Mode > Import.</label>
+      <textarea id="lOut" readonly></textarea>
+      <div class="row"><button class="primary" id="copyOut">Copy</button><span id="copyStatus" class="status"></span></div>
+      <p class="muted">Afterwards, check anything attached to a bar or frame that looks different in the other version. The main action bar and XP bar are the usual ones. Nudge them in Edit Mode, then save.</p>
+    </div>
+  </div>
+</section>
+<section id="tab-restore" class="hidden">
+  <div class="card">
+    <h2>Your backups</h2>
+    <p class="muted">Each time this tool replaces a file, it saves the old one next to it first. Restoring a backup also saves the current file first, so you can undo a restore too. Close the game before restoring.</p>
+    <div class="row"><button class="secondary" id="rescan">Refresh list</button></div>
+    <div id="backupList" class="status muted">Choose your World of Warcraft folder at the top of the page to see your backups.</div>
+  </div>
+</section>
+</main>
+
+<script>
+/*LAYOUT_JS*/
+</script>
+<script>
+const FOREVER_DEFAULT = /*FOREVER_DEFAULT*/;
+const $ = id => document.getElementById(id);
+
+// Tabs
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === b));
+  for (const t of ['keys', 'layout', 'restore']) $('tab-' + t).classList.toggle('hidden', b.dataset.tab !== t);
+});
+
+// ---------- Keybinds ----------
+const BIND = 'bindings-cache.wtf';
+let installs = []; // {name, wtf, accounts:[{name, dir, hasBind, chars:[{realm, name, dir, hasBind}]}]}
+
+if (!window.showDirectoryPicker) {
+  $('unsupported').classList.remove('hidden'); $('pick').disabled = true;
+  if (navigator.brave) $('unsupported').innerHTML = `<p class="err" style="margin-top:0">Brave turns off folder access by default.</p>
+    <p>To turn it on: copy <code>brave://flags/#file-system-access-api</code> into the address bar, set it to <strong>Enabled</strong>, restart Brave, then reload this page. Or open this page in Chrome or Edge. The HUD layout tab works either way.</p>`;
+}
+
+async function tryDir(dir, name) { try { return await dir.getDirectoryHandle(name); } catch { return null; } }
+async function tryFile(dir, name) { try { return await dir.getFileHandle(name); } catch { return null; } }
+async function subdirs(dir) { const out = []; for await (const [n, h] of dir.entries()) if (h.kind === 'directory') out.push([n, h]); return out.sort((a, b) => a[0].localeCompare(b[0])); }
+const prettyInstall = n => ({ _retail_: 'Retail', _classic_: 'Classic', _classic_era_: 'Classic Era', _ptr_: 'Retail PTR', _beta_: 'Retail beta', _classic_beta_: 'Classic beta (WoW Forever beta)', _classic_ptr_: 'Classic PTR', _xptr_: 'Retail XPTR', _anniversary_: 'Classic Anniversary', _classic_era_ptr_: 'Classic Era PTR', _forever_: 'WoW Forever' }[n] || n) + (n.startsWith('_') ? ` (${n})` : '');
+
+async function scanAccount(name, dir) {
+  const acct = { name, dir, hasBind: !!(await tryFile(dir, BIND)), chars: [] };
+  for (const [realm, rdir] of await subdirs(dir)) {
+    if (realm === 'SavedVariables') continue;
+    for (const [c, cdir] of await subdirs(rdir)) {
+      if (c === 'SavedVariables') continue;
+      acct.chars.push({ realm, name: c, dir: cdir, hasBind: !!(await tryFile(cdir, BIND)) });
+    }
+  }
+  return acct;
+}
+
+$('pick').onclick = async () => {
+  let root;
+  try { root = await window.showDirectoryPicker({ id: 'wow', mode: 'readwrite' }); } catch { return; }
+  installs = [];
+  const found = [];
+  const candidates = await subdirs(root);
+  // Allow picking an install folder (e.g. _retail_) directly too
+  if (await tryDir(root, 'WTF')) candidates.unshift([root.name, root, true]);
+  for (const [n, h] of candidates) {
+    const wtf = await tryDir(h, 'WTF'); if (!wtf) continue;
+    const acc = await tryDir(wtf, 'Account');
+    const accounts = [];
+    if (acc) for (const [an, ad] of await subdirs(acc)) if (an !== 'SavedVariables') accounts.push(await scanAccount(an, ad));
+    installs.push({ name: n, wtf, accounts });
+    found.push(n);
+  }
+  if (!installs.length) { $('pickStatus').innerHTML = `<span class="err">No WoW installs found in "${root.name}". Pick the folder that contains _retail_ or _classic_.</span>`; return; }
+  $('pickStatus').innerHTML = `<span class="ok">Found ${installs.length} game version${installs.length > 1 ? 's' : ''}: ${found.map(prettyInstall).join(', ')}</span>`;
+  for (const id of ['srcInst', 'dstInst']) $(id).innerHTML = installs.map((i, k) => `<option value="${k}">${prettyInstall(i.name)}</option>`).join('');
+  const ret = installs.findIndex(i => i.name === '_retail_');
+  $('srcInst').value = ret >= 0 ? ret : 0;
+  $('dstInst').value = installs.findIndex((_, k) => k != $('srcInst').value) >= 0 ? installs.findIndex((_, k) => k != $('srcInst').value) : 0;
+  ['chooseCard', 'goCard'].forEach(id => { $(id).style.opacity = 1; $(id).style.pointerEvents = 'auto'; });
+  fillAccounts('src'); fillAccounts('dst');
+  scanBackups();
+};
+
+function fillAccounts(side) {
+  const inst = installs[$(side + 'Inst').value];
+  $(side + 'Acct').innerHTML = inst.accounts.length ? inst.accounts.map((a, k) => `<option value="${k}">${a.name}</option>`).join('') : '<option value="">No accounts yet. Log in to this version once first.</option>';
+  refresh();
+}
+['src', 'dst'].forEach(s => { $(s + 'Inst').onchange = () => fillAccounts(s); $(s + 'Acct').onchange = refresh; });
+const cur = side => { const i = installs[$(side + 'Inst').value]; const a = i && i.accounts[$(side + 'Acct').value]; return { i, a }; };
+
+function refresh() {
+  const s = cur('src'), d = cur('dst');
+  const sc = s.a ? s.a.chars.filter(c => c.hasBind) : [];
+  $('srcInfo').innerHTML = !s.a ? '' : s.a.hasBind ? `<span class="ok">Account keybinds found.</span>` + (sc.length ? ` ${sc.length} character${sc.length > 1 ? 's' : ''} also have their own.` : '')
+    : `<span class="warn">No account keybinds file here.</span> Log into this game version once and log out normally to create it.`;
+  $('dstInfo').innerHTML = !d.a ? '<span class="warn">Log into this game version once so its account folder exists.</span>' : d.a.hasBind ? 'Existing keybinds will be backed up first.' : 'No keybinds file yet. One will be created.';
+  $('charBlock').classList.toggle('hidden', !sc.length);
+  $('srcChar').innerHTML = '<option value="">(none)</option>' + sc.map(c => `<option value="${s.a.chars.indexOf(c)}">${c.name} (${c.realm})</option>`).join('');
+  $('dstChar').innerHTML = '<option value="">(none)</option>' + (d.a ? d.a.chars.map((c, k) => `<option value="${k}">${c.name} (${c.realm})</option>`).join('') : '');
+  const same = s.a && d.a && s.a.dir === d.a.dir;
+  $('go').disabled = !s.a || !d.a || !s.a.hasBind || same;
+  if (same) $('dstInfo').innerHTML = '<span class="warn">Copy from and copy to are the same account.</span>';
+}
+
+const pad = n => String(n).padStart(2, '0');
+const stamp = () => { const d = new Date(); return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; };
+async function readText(dir, name) { const h = await tryFile(dir, name); return h ? await (await h.getFile()).text() : null; }
+async function writeText(dir, name, text) { const h = await dir.getFileHandle(name, { create: true }); const w = await h.createWritable(); await w.write(text); await w.close(); }
+const NOFILE = '# WoW Settings Transfer: there was no file here before. Restoring this backup removes the file.\n';
+async function backupName(dir, name) {
+  let base = `${name}.backup-${stamp()}`, n = base, i = 2;
+  while (await tryFile(dir, n)) n = `${base}-${i++}`;
+  return n;
+}
+// Save the current file (or a "there was no file" marker) before replacing it.
+async function backup(dir, name) {
+  const old = await readText(dir, name);
+  const b = await backupName(dir, name);
+  await writeText(dir, b, old === null ? NOFILE : old);
+  return { b, existed: old !== null };
+}
+async function copyBind(fromDir, toDir, label) {
+  const text = await readText(fromDir, BIND);
+  const { b, existed } = await backup(toDir, BIND);
+  log(existed ? `Backed up the existing ${label} keybinds to <code>${b}</code>` : `There were no ${label} keybinds before. Restoring <code>${b}</code> will remove the new file.`);
+  await writeText(toDir, BIND, text);
+  log(`<span class="ok">Copied ${label} keybinds</span> (${text.split(/\r?\n/).filter(l => l.startsWith('bind ')).length} bindings)`);
+}
+const log = html => { const li = document.createElement('li'); li.innerHTML = html; $('log').appendChild(li); };
+
+$('go').onclick = async () => {
+  $('log').innerHTML = ''; $('go').disabled = true;
+  try {
+    const s = cur('src'), d = cur('dst');
+    await copyBind(s.a.dir, d.a.dir, 'account');
+    if ($('srcChar').value !== '' && $('dstChar').value !== '') {
+      const sc = s.a.chars[$('srcChar').value], dc = d.a.chars[$('dstChar').value];
+      await copyBind(sc.dir, dc.dir, `${dc.name}'s character`);
+    }
+    if ($('optSync').checked) {
+      const cfg = await readText(d.i.wtf, 'Config.wtf');
+      if (cfg === null) log('<span class="warn">No Config.wtf in the destination yet, so the sync setting was skipped.</span> Launch that game once, close it, and run this again.');
+      else if (/SET synchronizeBindings "0"/i.test(cfg)) log('Config.wtf already has synchronizeBindings turned off.');
+      else {
+        await backup(d.i.wtf, 'Config.wtf');
+        const nl = cfg.includes('\r\n') ? '\r\n' : '\n';
+        const next = /SET synchronizeBindings "\d"/i.test(cfg) ? cfg.replace(/SET synchronizeBindings "\d"/i, 'SET synchronizeBindings "0"') : cfg.replace(/\s*$/, '') + nl + 'SET synchronizeBindings "0"' + nl;
+        await writeText(d.i.wtf, 'Config.wtf', next);
+        log('Turned off keybind syncing in the destination Config.wtf (a backup was saved next to it)');
+      }
+    }
+    log('<strong>Done.</strong> Launch the destination game and check a few keys. If you don\'t like the result, the Backups &amp; restore tab puts the old keybinds back.');
+    scanBackups();
+    const idx = $('dstAcct').value; d.a.hasBind = true; refresh(); $('dstAcct').value = idx;
+  } catch (e) { log(`<span class="err">Something went wrong: ${e.message}</span> Make sure both games are closed and try again.`); }
+  $('go').disabled = false;
+};
+
+// ---------- Backups & restore ----------
+const BK = /^(.+)\.backup-(\d{8})-(\d{6})(?:-\d+)?$/;
+const fmtStamp = (d, t) => new Date(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8), +t.slice(0, 2), +t.slice(2, 4), +t.slice(4, 6)).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+async function backupsIn(dir, label, install) {
+  const out = [];
+  for await (const [n, h] of dir.entries()) {
+    const m = h.kind === 'file' && n.match(BK);
+    if (m) {
+      const empty = (await (await h.getFile()).text()) === NOFILE;
+      out.push({ dir, file: n, original: m[1], when: m[2] + m[3] + n.length, whenText: fmtStamp(m[2], m[3]), label: label + (empty ? ' <em class="muted">(no file before this)</em>' : ''), install });
+    }
+  }
+  return out;
+}
+let backups = [];
+async function scanBackups() {
+  if (!installs.length) return;
+  backups = [];
+  for (const inst of installs) {
+    backups.push(...await backupsIn(inst.wtf, 'Game settings (Config.wtf)', inst.name));
+    for (const a of inst.accounts) {
+      backups.push(...await backupsIn(a.dir, `Account keybinds for ${a.name}`, inst.name));
+      for (const c of a.chars) backups.push(...await backupsIn(c.dir, `${c.name} (${c.realm}) keybinds`, inst.name));
+    }
+  }
+  backups.sort((x, y) => y.when.localeCompare(x.when));
+  renderBackups();
+}
+function renderBackups() {
+  const el = $('backupList');
+  if (!backups.length) { el.innerHTML = 'No backups yet. They appear here after you copy keybinds.'; return; }
+  const groups = {};
+  backups.forEach((b, i) => (groups[b.install] = groups[b.install] || []).push([b, i]));
+  el.innerHTML = Object.entries(groups).map(([inst, rows]) => `<div class="bgroup"><h3>${prettyInstall(inst)}</h3>` + rows.map(([b, i]) =>
+    `<div class="brow"><div class="what">${b.label}<small>Saved ${b.whenText} · <code>${b.file}</code></small></div>
+     <div class="acts"><button class="primary" data-restore="${i}">Restore</button><button class="danger" data-del="${i}">Delete</button></div></div>`).join('') + '</div>').join('');
+}
+$('backupList').addEventListener('click', async e => {
+  const r = e.target.dataset.restore, d = e.target.dataset.del;
+  if (r !== undefined) {
+    const b = backups[r];
+    e.target.disabled = true;
+    try {
+      const text = await readText(b.dir, b.file);
+      await backup(b.dir, b.original);
+      if (text === NOFILE) { try { await b.dir.removeEntry(b.original); } catch {} }
+      else await writeText(b.dir, b.original, text);
+      await scanBackups();
+      $('backupList').insertAdjacentHTML('afterbegin', `<p class="ok">Restored ${b.label.replace(/ <em.*$/, '')} from ${b.whenText}. The file it replaced was saved as a new backup, so you can switch back.</p>`);
+    } catch (err) { e.target.disabled = false; alertRow(e.target, err); }
+  } else if (d !== undefined) {
+    if (e.target.dataset.confirm !== '1') { e.target.dataset.confirm = '1'; e.target.textContent = 'Confirm delete'; return; }
+    const b = backups[d];
+    try { await b.dir.removeEntry(b.file); await scanBackups(); } catch (err) { alertRow(e.target, err); }
+  }
+});
+const alertRow = (btn, err) => btn.closest('.brow').insertAdjacentHTML('beforeend', `<span class="err">Couldn't do that: ${err.message}. Is the game still running?</span>`);
+$('rescan').onclick = () => installs.length ? scanBackups() : $('pick').click();
+
+// ---------- HUD layout ----------
+$('useForever').onclick = () => { $('lTgt').value = FOREVER_DEFAULT; };
+$('convert').onclick = () => {
+  $('lOutWrap').classList.add('hidden');
+  const src = $('lSrc').value.trim(), tgt = $('lTgt').value.trim();
+  if (!src || !tgt) { $('lStatus').innerHTML = '<span class="err">Paste both layouts first.</span>'; return; }
+  try {
+    const { text, report } = WoWLayout.convertLayout(src, tgt);
+    $('lOut').value = text;
+    $('lOutWrap').classList.remove('hidden');
+    const parts = [`<span class="ok">Converted.</span> ${report.moved} elements moved to your positions and ${report.settings} elements got your settings.`];
+    if (report.dropped.length) parts.push(report.dropped.length > 1 ? `${report.dropped.length} elements from your layout don't exist in the destination and were skipped.` : `1 element from your layout doesn't exist in the destination and was skipped.`);
+    if (report.keptTarget.length) parts.push(report.keptTarget.length > 1 ? `${report.keptTarget.length} elements only exist in the destination and stay at its defaults.` : `1 element only exists in the destination and stays at its default.`);
+    $('lStatus').innerHTML = parts.join(' ');
+  } catch (e) { $('lStatus').innerHTML = `<span class="err">${e.message}</span>`; }
+};
+$('copyOut').onclick = async () => {
+  try { await navigator.clipboard.writeText($('lOut').value); $('copyStatus').innerHTML = '<span class="ok">Copied</span>'; }
+  catch { $('lOut').select(); $('copyStatus').textContent = 'Press Ctrl+C to copy'; }
+};
+</script>
+</body>
+</html>
