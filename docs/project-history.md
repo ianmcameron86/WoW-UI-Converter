@@ -45,7 +45,7 @@ A summary of the chat where this project started (Sept 24, 2026), in order.
   - Retail > Classic Era
   - restore, and a restore that removes a file added with no previous file
   - delete
-- **Not yet tested:** the tool hasn't been run against Ian's real WoW folder. Ask him to try it.
+- **Now tested for real (Sept 24, 2026).** Ian ran the tool against his own WoW folder to repair the Forever keybinds the server copy had wiped. Retail to Classic beta, account-wide, sync box left ticked. Everything it claimed, it did, checked on disk afterwards: 54 binds copied and identical to Retail's file, the previous (empty) file backed up to `bindings-cache.wtf.backup-20260924-223759`, `SET synchronizeBindings "0"` written to the destination `Config.wtf`, and that backed up too. He confirmed the keys were right in-game.
 
 ## 4. Publishing
 

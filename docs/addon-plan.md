@@ -12,7 +12,9 @@ An addon that moves **keybinds** and the **Edit Mode layout** between WoW versio
 
 ## Status
 
-Not started. A read-only probe addon is built and **installed in all four of Ian's clients** (`_retail_`, `_anniversary_`, `_classic_beta_`, `_classic_era_`), waiting for him to run `/wucprobe full` in each. Nothing else is written yet, on purpose, because two design questions can't be answered from outside the game (see "The open question" below).
+Not started. A read-only probe addon is built and **installed in all four of Ian's clients** (`_retail_`, `_anniversary_`, `_classic_beta_`, `_classic_era_`), waiting for him to run `/wucprobe full` in each.
+
+**It loads.** Ian saw "WoW UI Converter probe loaded" in the Forever beta on Sept 24, 2026, so the guessed TOC interface numbers are accepted there and the Lua parses and runs in that client. Its report hasn't been read yet. Nothing else is written yet, on purpose, because two design questions can't be answered from outside the game (see "The open question" below).
 
 Because the probe writes its report to SavedVariables on logout, and Claude has read access to the WoW folder, the results can be read straight from
 `WTF\Account\<account>\SavedVariables\WoWUIConverterProbe.lua`. No copying and pasting.
