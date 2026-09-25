@@ -28,7 +28,8 @@ src/layout.js         Layout string parser/converter. Shared by the page and the
 build.js              node build.js > writes index.html from src/ + the Forever default layout.
 tests/layout.test.js  node tests/layout.test.js > converter tests against real strings.
 reference/layouts/    Real export strings: Ian's Retail layout, the Forever beta default,
-                      Ian's final hand-tuned Forever layout, and the first conversion attempt.
+                      Ian's final hand-tuned Forever layout, the first conversion attempt,
+                      and Ian's Classic Burning Crusade layout.
 reference/screenshots/ Retail vs Forever UI screenshots. Local only (gitignored) because they
                       show other players' names in chat.
 docs/                 project-history.md, layout-string-format.md, addon-plan.md
@@ -87,6 +88,7 @@ Known gaps:
 - **Keybinds carry over by file copy:** copying Retail's `bindings-cache.wtf` into the Forever beta account folder worked. All keys showed correctly on the bars.
 - **Layout import works:** the converted Retail layout imported into Forever without errors. Ian then hand-tuned it (`reference/layouts/forever-beta-ian-final.txt`).
 - **Bar slots are server-side:** spells in action bar slots are saved on the server, not in the files, so file copying can't move them.
+- **Classic Burning Crusade has Edit Mode too,** and exports the same format as Retail: a `2 <count>` header with 10-token entries. Ian's export is `reference/layouts/classic-bc-ian.txt`. The converter handled it with no code changes, confirmed by tests. BC has fewer systems than the others, so BC to anything loses nothing, and anything to BC drops what BC has no room for. Details in `docs/layout-string-format.md`.
 - **Brave:** it disables the File System Access API by default (`brave://flags/#file-system-access-api`). The page detects Brave and explains this. Firefox and Safari can't open folders at all.
 
 ## How Ian likes to work

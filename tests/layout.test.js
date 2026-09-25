@@ -7,6 +7,7 @@ const ref = f => fs.readFileSync(path.join(__dirname, '../reference/layouts', f)
 const retail = ref('retail-ian.txt');
 const foreverDefault = ref('forever-beta-default.txt');
 const foreverFinal = ref('forever-beta-ian-final.txt');
+const classicBC = ref('classic-bc-ian.txt');
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('ok -', name); };
 
 t('parses Retail (2-token header) and Forever beta (3-token header)', () => {
@@ -35,6 +36,41 @@ t('Ian\'s hand-tuned Forever layout converts back to a valid Retail layout', () 
   const { text } = convertLayout(foreverFinal, retail);
   const out = parseLayout(text);
   assert.deepStrictEqual(out.header, ['2', '52']);
+});
+
+t('parses Classic Burning Crusade (2-token header, fewer systems)', () => {
+  const p = parseLayout(classicBC);
+  assert.deepStrictEqual(p.header, ['2', '31']);
+  assert.strictEqual(p.entries.length, 31);
+  // BC has no encounter bar, talking head, loot, tooltip or objective tracker.
+  const systems = new Set(p.entries.map(e => e[0]));
+  for (const missing of ['4', '7', '10', '11', '12']) assert.ok(!systems.has(missing), 'BC should not have system ' + missing);
+});
+
+t('Classic BC > Forever loses nothing, because BC systems are a subset', () => {
+  const { text, report } = convertLayout(classicBC, foreverDefault);
+  const out = parseLayout(text);
+  assert.deepStrictEqual(out.header, ['4', '0', '59']);
+  assert.strictEqual(out.entries.length, 59);
+  assert.deepStrictEqual(report.dropped, []);
+  assert.strictEqual(report.moved, 9);
+  // A position BC moved is carried over exactly.
+  const player = out.entries.find(e => e[0] === '3' && e[1] === '0');
+  assert.deepStrictEqual(player.slice(2, 9), ['0', '1', '1', 'UIParent', '-346.4', '-212.7', '-1']);
+});
+
+t('Classic BC > Forever > Classic BC round trip returns the original string exactly', () => {
+  const there = convertLayout(classicBC, foreverDefault).text;
+  assert.strictEqual(convertLayout(there, classicBC).text, classicBC);
+});
+
+t('Retail > Classic BC keeps BC structure and reports the systems BC has no room for', () => {
+  const { text, report } = convertLayout(retail, classicBC);
+  const out = parseLayout(text);
+  assert.deepStrictEqual(out.header, ['2', '31']);
+  assert.strictEqual(out.entries.length, 31);
+  // Retail-only systems can't survive the trip, and the user is told which.
+  for (const gone of ['4:-1', '7:-1', '10:-1', '11:-1', '12:-1']) assert.ok(report.dropped.includes(gone), 'should report dropping ' + gone);
 });
 
 t('rejects text that is not a layout string', () => {
