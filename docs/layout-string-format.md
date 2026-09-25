@@ -15,7 +15,9 @@ then, repeated until the end of the file:
 - The file ends with a **null byte**. Strip it before parsing.
 - A layout **name can contain spaces** ("Epic BG"), so rebuild it up to `nameLength` characters rather than taking one token.
 - `settingCount` varies by version (34, 36 and 38 were seen). These look like account-wide Edit Mode settings, not per layout. The converter skips them.
-- **Version 4 adds a layout type per layout**, which is why a Forever export header is `4 0 59` and a Retail one is only `2 52`. That confirms what this doc previously guessed about the middle token.
+- **Version 4 adds one extra field per layout**, which is why a Forever export header is `4 0 59` and a Retail one is only `2 52`.
+
+  It was called "layout type" here for a while. **That looks wrong.** The in-game probe reported `layoutType=1` for both of Forever's layouts and for BC's, while the serialized field is `0` in every export seen. So the two aren't the same thing, and what the `0` means is still unknown. The converter just carries it across unchanged, which is correct either way.
 
 What was in each install:
 

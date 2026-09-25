@@ -196,8 +196,24 @@ local function buildReport(full)
   return table.concat(lines, '\n')
 end
 
+-- A ScrollFrame's child has to be told how tall it is. Left unset its height is
+-- zero and the text is invisible, which is exactly what happened in 0.1.
+-- Long lines wrap, so count the wrapped rows too. Overestimating only adds
+-- blank space at the bottom; underestimating hides text.
+local function textHeight(edit, text, width)
+  local _, size = edit:GetFont()
+  size = (size or 12) + 2
+  local perLine = math.max(20, math.floor(width / (size * 0.5)))
+  local rows = 0
+  for line in (text .. '\n'):gmatch('([^\n]*)\n') do
+    rows = rows + math.max(1, math.ceil(#line / perLine))
+  end
+  return rows * size + 40
+end
+
 -- A copyable box. Built defensively so it works on Retail and Classic clients.
 local frame
+local EDIT_WIDTH = 620
 local function showReport(text)
   if not frame then
     frame = CreateFrame('Frame', 'WUCProbeFrame', UIParent,
@@ -234,12 +250,16 @@ local function showReport(text)
     edit:SetMultiLine(true)
     edit:SetAutoFocus(false)
     edit:SetFontObject('ChatFontNormal')
-    edit:SetWidth(620)
+    edit:SetWidth(EDIT_WIDTH)
+    edit:SetHeight(400) -- replaced once there's text; must not be 0
     edit:SetScript('OnEscapePressed', function() frame:Hide() end)
     scroll:SetScrollChild(edit)
+    frame.scroll = scroll
     frame.edit = edit
   end
   frame.edit:SetText(text)
+  frame.edit:SetHeight(textHeight(frame.edit, text, EDIT_WIDTH))
+  frame.scroll:UpdateScrollChildRect()
   frame:Show()
 end
 

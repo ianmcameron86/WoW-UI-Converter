@@ -14,7 +14,27 @@ An addon that moves **keybinds** and the **Edit Mode layout** between WoW versio
 
 Not started. A read-only probe addon is built and **installed in all four of Ian's clients** (`_retail_`, `_anniversary_`, `_classic_beta_`, `_classic_era_`), waiting for him to run `/wucprobe full` in each.
 
-**It loads.** Ian saw "WoW UI Converter probe loaded" in the Forever beta on Sept 24, 2026, so the guessed TOC interface numbers are accepted there and the Lua parses and runs in that client. Its report hasn't been read yet. Nothing else is written yet, on purpose, because two design questions can't be answered from outside the game (see "The open question" below).
+**Probe 0.1 ran in Forever and Anniversary on Sept 24, 2026.** Findings below. Two bugs were found and fixed in 0.2:
+
+- **The report window was empty.** The EditBox is a ScrollFrame child and had no height set, so it rendered nothing. The report itself was always fine: it was intact in SavedVariables the whole time. 0.2 sizes the box to the text.
+- **Retail said "Incompatible".** The TOC interface numbers were guesses and all wrong. The real ones, taken from the clients themselves rather than guessed, are now in the TOC: **120001** Retail (Midnight), **20506** Anniversary/BC, **16001** Forever. Classic Era is still a guess at 11507.
+
+## What the probe found
+
+| | Forever (`_classic_beta_`) | Anniversary / BC (`_anniversary_`) |
+|---|---|---|
+| Version | 1.60.1 build 70009 | 2.5.6 build 69795 |
+| tocversion | 16001 | 20506 |
+| `WOW_PROJECT_ID` | **1, i.e. MAINLINE** | 5 |
+| `C_EditMode` | present | present |
+| `EditModeManagerFrame` | present | present |
+| `GetNumBindings()` | 289, 134 bound | 270, 122 bound |
+
+- **Forever identifies as MAINLINE, not Classic.** It installs into `_classic_beta_` but `WOW_PROJECT_ID` is 1. So the folder name is not a reliable guide to which code base a client runs.
+- **Both clients expose the same `C_EditMode`:** `ConvertLayoutInfoToString`, `ConvertStringToLayoutInfo`, `GetAccountSettings`, `GetLayouts`, `IsValidLayoutName`, `OnEditModeExit`, `OnLayoutAdded`, `OnLayoutDeleted`, `SaveLayouts`, `SetAccountSetting`, `SetActiveLayout`. Forever also has `GetEditModeDefaultLayout`.
+- **`EditModeManagerFrame:ImportLayout` exists in both.** That's the call Edit Mode's own import uses, and it's the most promising route for an addon applying a layout.
+- **Reading layouts works.** `GetLayouts()` returned Forever's two layouts and BC's one, `ConvertLayoutInfoToString` produced strings matching what the files hold, and `ConvertStringToLayoutInfo` round-tripped.
+- **The protection question is still open.** Every function reported `secure`, but `issecurevariable` only means *untainted*; it does not prove an addon can call it without the call being refused. The probe deliberately never tried to save a layout. That test still has to be run on purpose, with a backup. Nothing else is written yet, on purpose, because two design questions can't be answered from outside the game (see "The open question" below).
 
 Because the probe writes its report to SavedVariables on logout, and Claude has read access to the WoW folder, the results can be read straight from
 `WTF\Account\<account>\SavedVariables\WoWUIConverterProbe.lua`. No copying and pasting.
