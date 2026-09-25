@@ -1,4 +1,4 @@
-# In-game addon plan (not started)
+# In-game addon plan
 
 ## Goal
 
@@ -10,11 +10,32 @@ An addon that moves **keybinds** and the **Edit Mode layout** between WoW versio
 - **Keybinds and layout in one string:** there's no separate layout paste step.
 - **Discoverable:** WoW players already find tools on CurseForge and Wago.
 
-## Proposed design (to confirm against each client)
+## Status
+
+Not started. A read-only probe addon is built and waiting to be run: `addon/WoWUIConverterProbe`. Nothing else is written yet, on purpose, because two design questions can't be answered from outside the game (see "The open question" below).
+
+## Decisions made
+
+- **Two transports, both supported.** The addon can hand over a paste string, and it can also write its export to SavedVariables so the **web tool** moves it between installs, the same way the web tool already moves `bindings-cache.wtf`. Paste keeps the addon useful on its own; the SavedVariables route avoids pasting a multi-kilobyte string into a WoW edit box. Ian's Retail layout alone is about 2.4 KB before keybinds are added.
+- **Probe before building.** Confirm the API surface in each client first.
+
+## The open question, and why it decides the design
+
+Whether an **addon** can apply an Edit Mode layout. Reading one is very likely fine. Saving one may be protected, the way parts of Edit Mode are in Retail. **This is inference, not confirmed.** It splits the design in two:
+
+- **If an addon can apply layouts:** `/wuc import` previews the changes and applies them directly. One step.
+- **If it can't:** the addon becomes an exporter and converter. It reads the source layout, converts it, and hands over a string for the user to paste into Edit Mode's own import box. Keybinds still apply directly. Two steps, less magical, but it still removes the file copying and the web tool round trip.
+
+Either way the addon is worth building, so this doesn't block starting. It only decides whether import is one step or two.
+
+What's already **verified** and doesn't need re-checking: Forever has Edit Mode, and its layout strings export and import. `reference/layouts/forever-beta-default.txt` came out of the Forever beta itself, and the converted Retail layout imported back into it.
+
+## Proposed design (to confirm against the probe results)
 
 - **Commands:**
-  - `/wuc export`: shows a copyable string holding keybinds, the current Edit Mode layout, and a version tag.
+  - `/wuc export`: shows a copyable string holding keybinds, the current Edit Mode layout, and a version tag. Also stores it in SavedVariables.
   - `/wuc import`: paste a string, preview what will change, then apply.
+  - `/wuc undo`: restore the pre-import backup.
 - **Keybinds:**
   - read: `GetNumBindings()` / `GetBinding(i)` (command, key1, key2)
   - apply: `SetBinding(key, command)` then `SaveBindings(GetCurrentBindingSet())`
@@ -22,21 +43,30 @@ An addon that moves **keybinds** and the **Edit Mode layout** between WoW versio
   - commands the destination doesn't know are skipped and listed for the user
 - **Layout:**
   - read: `C_EditMode.GetLayouts()` / `C_EditMode.ConvertLayoutInfoToString()`
-  - apply: `C_EditMode.ConvertStringToLayoutInfo()`
+  - apply: `C_EditMode.ConvertStringToLayoutInfo()`, if that turns out to be allowed
   - convert with the same merge approach as `src/layout.js`, ported to Lua, using the destination client's own active layout as the base
   - save as a new layout, never overwriting an existing one, so it's always reversible
 - **Backup:**
   - before an import, store the current bindings and layout in SavedVariables
   - `/wuc undo` restores them
 - **String format:** a version prefix plus compressed, encoded data. LibDeflate plus LibSerialize is the usual choice. Include a checksum.
-- **TOC:** one addon folder listing every client's interface number, e.g. `## Interface: 110200, 50500, 11507`. Confirm the current numbers per client, including Forever's.
+- **TOC:** one addon folder listing every client's interface number, e.g. `## Interface: 110200, 50500, 11507`. The real numbers come from the probe.
 - **Packaging:** GitHub releases, plus CurseForge and Wago. Players install the same addon in each client's `Interface\AddOns` folder.
 
-## Unknowns to check first (in-game, with Ian)
+## What the probe answers
 
-- **Does Forever have the API?** Does the Forever beta client (Classic branch, `_classic_beta_`) have `C_EditMode` with the convert functions? Check with `/dump C_EditMode ~= nil`.
-- **Exact names:** the exact function names and signatures in each client. Retail and Classic may differ.
-- **Server copy:** whether `SaveBindings` gets overwritten by the server sync, as the file copy can be.
-- **Interface numbers:** the TOC interface number for the Forever beta, from `/dump select(4, GetBuildInfo())`.
+Run `addon/WoWUIConverterProbe` in Retail and in the Forever beta, then compare. See `addon/README.md` for how. It reports:
 
-Start with a small test addon that dumps these values in each client before building the real thing.
+- **Interface number** and build, per client, for the TOC (`GetBuildInfo()`).
+- **Does Forever have the API?** Whether `C_EditMode` and `EditModeManagerFrame` exist, and every function name they expose.
+- **Exact names:** which of the functions we plan to call are actually present in each client, rather than assumed.
+- **Is it protected?** `issecurevariable` on each function, which is the first hint about whether applying a layout is allowed.
+- **Does the read path work?** It converts the live layout to a string and back, and prints the first 120 characters, so we can confirm the format matches what `src/layout.js` already parses.
+- **Keybinds:** how many exist, how many are bound, and the full command list, which tells us how commands differ between versions.
+
+It deliberately does **not** try to save a layout. That test needs to be deliberate and backed up, not a side effect of a probe.
+
+## Still to check after the probe
+
+- **Server copy:** whether `SaveBindings` gets overwritten by the server sync, the way the file copy can be.
+- **Whether a layout can actually be saved** from an addon, tested on purpose with a backup in place.

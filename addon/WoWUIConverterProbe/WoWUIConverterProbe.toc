@@ -1,0 +1,8 @@
+## Interface: 110200, 50500, 11507
+## Title: WoW UI Converter Probe
+## Notes: Read-only. Reports which keybind and Edit Mode APIs this client has.
+## Author: ianmcameron86
+## Version: 0.1
+## SavedVariables: WoWUIConverterProbeDB
+
+probe.lua
