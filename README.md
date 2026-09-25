@@ -47,7 +47,7 @@ If a version or account doesn't show up, log into that version once and log out 
 
 ## Found a bug?
 
-Either open an issue here, or message me on Discord: **TheSaint**.
+Either open an issue here, or message me on Discord: `thesaint`.
 
 There's a **Report a bug** link at the bottom of the page too. It opens a new GitHub issue with a few details already filled in: your browser, which game versions were found, and the shape of the layouts you converted (the header and how many elements, not the layouts themselves).
 
