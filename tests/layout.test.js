@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
-const { parseLayout, convertLayout } = require('../src/layout.js');
+const { parseLayout, convertLayout, parseLayoutCache, cacheLayoutToString } = require('../src/layout.js');
 const ref = f => fs.readFileSync(path.join(__dirname, '../reference/layouts', f), 'utf8').trim();
 const retail = ref('retail-ian.txt');
 const foreverDefault = ref('forever-beta-default.txt');
@@ -75,6 +75,70 @@ t('Retail > Classic BC keeps BC structure and reports the systems BC has no room
 
 t('rejects text that is not a layout string', () => {
   assert.throws(() => parseLayout('hello world'));
+});
+
+// ---- edit-mode-cache-account.txt ----
+// Builds a cache file the way WoW writes one, out of layouts already in reference/.
+// The real files hold personal account settings, so they aren't checked in.
+function makeCache(version, settings, layouts) {
+  const parts = [version, String(settings.length)].concat(settings);
+  for (const l of layouts) {
+    const p = parseLayout(l.exportString);
+    parts.push(String(l.name.length), l.name);
+    if (Number(version) >= 4) parts.push(p.header[1]); // layout type
+    parts.push(String(p.entries.length));
+    for (const e of p.entries) parts.push(...e);
+  }
+  return parts.join(' ');
+}
+
+t('reads a version 2 cache holding several layouts, including names with spaces', () => {
+  const cache = makeCache('2', ['1', '100', '0'], [
+    { name: 'Epic BG', exportString: retail },
+    { name: 'mymodern', exportString: classicBC },
+  ]);
+  const c = parseLayoutCache(cache);
+  assert.strictEqual(c.version, '2');
+  assert.strictEqual(c.settings.length, 3);
+  assert.deepStrictEqual(c.layouts.map(l => l.name), ['Epic BG', 'mymodern']);
+  assert.strictEqual(c.layouts[0].entries.length, 52);
+  assert.strictEqual(c.layouts[1].entries.length, 31);
+  assert.strictEqual(c.layouts[0].type, null); // version 2 has no layout type
+});
+
+t('reads a version 4 cache and picks up the per-layout type', () => {
+  const cache = makeCache('4', ['1', '100'], [{ name: 'main', exportString: foreverDefault }]);
+  const c = parseLayoutCache(cache);
+  assert.strictEqual(c.version, '4');
+  assert.strictEqual(c.layouts.length, 1);
+  assert.strictEqual(c.layouts[0].type, '0');
+  assert.strictEqual(c.layouts[0].entries.length, 59);
+});
+
+t('a layout read out of the cache rebuilds the exact export string', () => {
+  const v2 = parseLayoutCache(makeCache('2', ['0'], [{ name: 'Mythic', exportString: retail }]));
+  assert.strictEqual(cacheLayoutToString(v2.version, v2.layouts[0]), retail);
+  const v4 = parseLayoutCache(makeCache('4', ['0'], [{ name: 'main', exportString: foreverDefault }]));
+  assert.strictEqual(cacheLayoutToString(v4.version, v4.layouts[0]), foreverDefault);
+});
+
+t('ignores the trailing null byte WoW writes at the end of the file', () => {
+  const cache = makeCache('2', ['0'], [{ name: 'Farming', exportString: classicBC }]) + '\0';
+  const c = parseLayoutCache(cache);
+  assert.strictEqual(c.layouts.length, 1);
+  assert.strictEqual(cacheLayoutToString(c.version, c.layouts[0]), classicBC);
+});
+
+t('a cache layout converts like a pasted one', () => {
+  const c = parseLayoutCache(makeCache('2', ['0'], [{ name: 'mymodern', exportString: classicBC }]));
+  const asString = cacheLayoutToString(c.version, c.layouts[0]);
+  assert.strictEqual(convertLayout(asString, foreverDefault).text, convertLayout(classicBC, foreverDefault).text);
+});
+
+t('rejects files that are not an Edit Mode cache', () => {
+  assert.throws(() => parseLayoutCache('hello world'));
+  assert.throws(() => parseLayoutCache('2 99 1 2 3')); // says 99 settings, has 3
+  assert.throws(() => parseLayoutCache('2 0 5 abc 1 0 0')); // name shorter than its stated length
 });
 
 console.log(`\n${n} tests passed`);

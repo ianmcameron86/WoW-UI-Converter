@@ -14,7 +14,7 @@ A free, fan-made tool that lets World of Warcraft players copy their **keybinds*
 
 - **Web tool: done and live.** A single static page, `index.html`, built from `src/`. It has three tabs:
   - **Keybinds:** uses the File System Access API (`showDirectoryPicker`) to open the WoW folder. It finds every `_version_` install that has a `WTF` folder, then copies `bindings-cache.wtf` between any two installs/accounts (account-wide, plus optional per-character). It can add `SET synchronizeBindings "0"` to the destination `Config.wtf`.
-  - **HUD layout:** converts Edit Mode export strings between versions. See "Layout conversion" below.
+  - **HUD layout:** converts Edit Mode export strings between versions. See "Layout conversion" below. If a WoW folder has been chosen, it also offers every saved layout by name, read straight out of `edit-mode-cache-account.txt`, so there's no export-and-paste step. It never writes to that file.
   - **Backups & restore:** lists every `*.backup-YYYYMMDD-HHMMSS` file the tool made, with Restore and Delete buttons. Restoring backs up the current file first. A backup of "no file before" holds a marker line, and restoring it deletes the file.
 - **Next big goal: an in-game addon** that does the same job from inside WoW (export a string in one client, import it in another). The plan is in `docs/addon-plan.md`. Ian cares about **UI layout and keybinds matching**. Putting spells on action bars is **not** a priority.
 
@@ -83,8 +83,10 @@ Known gaps:
 
 ## Facts learned (verified in-game on Ian's PC)
 
-- **Install folders:** the WoW Forever beta installs as `_classic_beta_`, so it runs on the **Classic client branch**. Retail is `_retail_`. Ian's install is at `D:\BattleNet\World of Warcraft`.
-- **Where keybinds live:** Ian's Retail keybinds were **account-wide**, in `WTF\Account\<ACCOUNT>\bindings-cache.wtf`. His character folders had no `bindings-cache.wtf`.
+- **Install folders:** Ian's install is at `D:\BattleNet\World of Warcraft` and has exactly four: `_retail_`, `_anniversary_`, `_classic_beta_` and `_classic_era_`. The WoW Forever beta is `_classic_beta_`, so it runs on the **Classic client branch**. **His Burning Crusade Classic is `_anniversary_`** — there is no `_classic_` folder. Checked directly on his PC on Sept 24, 2026.
+- **Where keybinds live:** Ian's Retail keybinds are **account-wide**, in `WTF\Account\<ACCOUNT>\bindings-cache.wtf`. **One** Retail character also has its own `bindings-cache.wtf`, so don't assume character files are never used. `_classic_era_` has no keybind file at all.
+- **The Forever keybind copy did not survive.** `_classic_beta_\...\bindings-cache.wtf` is now **0 bytes**, and `bindings-cache.old` is 1704 bytes, exactly matching Retail's current file. So WoW rotated the copied file to `.old` and wrote an empty one over it. `synchronizeBindings` is **not set** in any of the four `Config.wtf` files. This is real evidence for the server-sync overwrite the tool's checkbox is meant to prevent. Whether his in-game binds still work is unconfirmed: with sync on, bindings live server-side, so an empty local cache doesn't necessarily mean they're lost.
+- **Layouts are stored as files**, in `WTF\Account\<ACCOUNT>\edit-mode-cache-account.txt`, all of them per account. The web tool reads this to offer layouts by name. Format in `docs/layout-string-format.md`.
 - **Keybinds carry over by file copy:** copying Retail's `bindings-cache.wtf` into the Forever beta account folder worked. All keys showed correctly on the bars.
 - **Layout import works:** the converted Retail layout imported into Forever without errors. Ian then hand-tuned it (`reference/layouts/forever-beta-ian-final.txt`).
 - **Bar slots are server-side:** spells in action bar slots are saved on the server, not in the files, so file copying can't move them.

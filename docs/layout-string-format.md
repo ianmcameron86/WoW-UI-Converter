@@ -2,6 +2,32 @@
 
 This is based on real exports from Retail and the WoW Forever beta. Where it says "likely", that part is inference and hasn't been confirmed.
 
+## Where the layouts actually live
+
+`WTF\Account\<account>\edit-mode-cache-account.txt` holds **every** layout an account has saved, not just one. Worked out from real files in four installs on Ian's PC (Sept 24, 2026) and verified: the layout it stores rebuilds into exactly the string Ian got from Edit Mode's Export.
+
+```
+<version> <settingCount> <settings...>
+then, repeated until the end of the file:
+  <nameLength> <name> [<layoutType>, version 4 only] <entryCount> <entries...>
+```
+
+- The file ends with a **null byte**. Strip it before parsing.
+- A layout **name can contain spaces** ("Epic BG"), so rebuild it up to `nameLength` characters rather than taking one token.
+- `settingCount` varies by version (34, 36 and 38 were seen). These look like account-wide Edit Mode settings, not per layout. The converter skips them.
+- **Version 4 adds a layout type per layout**, which is why a Forever export header is `4 0 59` and a Retail one is only `2 52`. That confirms what this doc previously guessed about the middle token.
+
+What was in each install:
+
+| Install | Version | Account settings | Layouts |
+|---|---|---|---|
+| `_retail_` | 2 | 36 | 4, of 52 entries each |
+| `_anniversary_` (Burning Crusade) | 2 | 34 | 1, of 31 entries |
+| `_classic_beta_` (Forever) | 4 | 38 | 2, of 59 entries each |
+| `_classic_era_` | — | — | no cache file at all, it has no Edit Mode |
+
+`src/layout.js` parses this with `parseLayoutCache()`, and `cacheLayoutToString()` turns one layout back into an export string. The web tool uses both to offer saved layouts by name, **reading only**. Nothing writes to this file, because it holds every layout the account owns plus the account settings, so a bad write would lose the lot.
+
 ## Overall shape
 
 Space-separated tokens: a header, then one 10-token entry per system (UI element).

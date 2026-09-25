@@ -38,6 +38,49 @@
     const header = tgt.header.slice(0, -1).concat(String(out.length));
     return { text: header.concat(...out).join(' '), report };
   }
-  const api = { parseLayout, convertLayout };
+  // WTF\Account\<acct>\edit-mode-cache-account.txt holds every layout the account
+  // has saved, not just one. Shape, worked out from real files in four installs:
+  //   <version> <settingCount> <settings...>
+  //   then per layout: <nameLength> <name> [<layoutType> only in version 4+] <entryCount> <entries...>
+  // The file ends with a null byte.
+  function parseLayoutCache(str) {
+    const bad = m => { throw new Error('That doesn\'t look like a WoW Edit Mode cache file' + (m ? ' (' + m + ')' : '') + '.'); };
+    const t = str.replace(/\0/g, '').trim().split(/\s+/);
+    let i = 0;
+    const version = t[i++];
+    const nSettings = parseInt(t[i++], 10);
+    if (!/^\d+$/.test(version || '') || isNaN(nSettings) || nSettings < 0) bad('bad header');
+    const settings = t.slice(i, i + nSettings); i += nSettings;
+    if (settings.length !== nSettings) bad('truncated settings');
+    const hasType = Number(version) >= 4; // version 4 carries a layout type, version 2 doesn't
+    const layouts = [];
+    while (i < t.length) {
+      const nameLen = parseInt(t[i++], 10);
+      if (isNaN(nameLen) || nameLen < 0) bad('bad layout name length');
+      // A layout name can contain spaces, so rebuild it until it's the stated length.
+      let name = '';
+      while (i < t.length && name.length < nameLen) name += (name ? ' ' : '') + t[i++];
+      if (name.length !== nameLen) bad('layout name does not match its stated length');
+      const type = hasType ? t[i++] : null;
+      const nEntries = parseInt(t[i++], 10);
+      if (isNaN(nEntries) || nEntries < 0) bad('bad entry count');
+      const flat = t.slice(i, i + nEntries * 10);
+      if (flat.length !== nEntries * 10) bad('truncated layout "' + name + '"');
+      i += nEntries * 10;
+      const entries = [];
+      for (let k = 0; k < flat.length; k += 10) entries.push(flat.slice(k, k + 10));
+      layouts.push({ name, type, entries });
+    }
+    return { version, settings, layouts };
+  }
+
+  // Turns one layout out of that file back into the string Edit Mode's Export gives you.
+  function cacheLayoutToString(version, layout) {
+    const n = String(layout.entries.length);
+    const header = Number(version) >= 4 ? [version, layout.type, n] : [version, n];
+    return header.concat(...layout.entries).join(' ');
+  }
+
+  const api = { parseLayout, convertLayout, parseLayoutCache, cacheLayoutToString };
   if (typeof module !== 'undefined') module.exports = api; else root.WoWLayout = api;
 })(this);

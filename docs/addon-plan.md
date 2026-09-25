@@ -12,7 +12,19 @@ An addon that moves **keybinds** and the **Edit Mode layout** between WoW versio
 
 ## Status
 
-Not started. A read-only probe addon is built and waiting to be run: `addon/WoWUIConverterProbe`. Nothing else is written yet, on purpose, because two design questions can't be answered from outside the game (see "The open question" below).
+Not started. A read-only probe addon is built and **installed in all four of Ian's clients** (`_retail_`, `_anniversary_`, `_classic_beta_`, `_classic_era_`), waiting for him to run `/wucprobe full` in each. Nothing else is written yet, on purpose, because two design questions can't be answered from outside the game (see "The open question" below).
+
+Because the probe writes its report to SavedVariables on logout, and Claude has read access to the WoW folder, the results can be read straight from
+`WTF\Account\<account>\SavedVariables\WoWUIConverterProbe.lua`. No copying and pasting.
+
+## What changed now that layouts are known to be files
+
+Layouts live in `WTF\Account\<account>\edit-mode-cache-account.txt` (see `docs/layout-string-format.md`), and the web tool now reads them. That **weakens the case for the addon's layout half**: moving a layout no longer needs an in-game export at all, just the file. What the addon would still add:
+
+- It works **without closing the game**, which the file route can't, since WoW only writes that file on logout.
+- **Keybinds in the same step**, which is the part the file copy keeps losing to the server sync.
+
+So if the layout write path turns out to be protected in-game, that's now much less of a problem than it looked.
 
 ## Decisions made
 

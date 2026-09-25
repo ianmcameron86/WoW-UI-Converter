@@ -37,6 +37,15 @@ To undo a change, open the **Backups & restore** tab, find the backup and click 
 
 Layout imports don't need backups. The game saves an imported layout as a new layout, and your existing ones stay in Edit Mode.
 
+## Shortcut: skip the exporting
+
+If you've chosen your WoW folder, the HUD layout tab lists every layout you've saved, in every version, by name. Pick one on each side and it fills both boxes for you, so there's no Edit Mode export or pasting.
+
+Two things to know:
+
+- **Close the game first.** WoW only writes your layouts to disk when you log out, so anything you changed this session won't be there yet.
+- It only **reads** that file. The converted layout still goes to your clipboard for Edit Mode > Import, exactly as before.
+
 ## Where WoW keeps these files
 
 - Account keybinds: `World of Warcraft\<version>\WTF\Account\<ACCOUNT>\bindings-cache.wtf`

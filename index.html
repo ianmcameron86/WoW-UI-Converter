@@ -108,9 +108,31 @@ a{color:var(--accent)}
 
 <section id="tab-layout" class="hidden">
   <p class="note" style="margin-top:0">This works between any two versions that have Edit Mode (Esc > Edit Mode), such as Retail, WoW Forever and the newer Classic versions. Versions without Edit Mode, like Classic Era, have no layout string to copy, but their keybinds still transfer on the Keybinds tab.</p>
+  <div class="card" id="lFolderCard">
+    <h2>Shortcut: load your saved layouts</h2>
+    <p class="muted" id="lFolderHint">Choose your World of Warcraft folder at the top of the page and your saved layouts appear here, so you don't have to export and paste them by hand. WoW keeps them in <code>WTF\Account\&lt;account&gt;\edit-mode-cache-account.txt</code>. This only reads that file, it never changes it.</p>
+    <div id="lFolderPickers" class="hidden">
+      <div class="grid">
+        <div>
+          <strong>Copy from</strong>
+          <label for="lSrcInst">Game version</label><select id="lSrcInst"></select>
+          <label for="lSrcAcct">Account</label><select id="lSrcAcct"></select>
+          <label for="lSrcLayout">Layout</label><select id="lSrcLayout"></select>
+        </div>
+        <div>
+          <strong>Copy to</strong>
+          <label for="lDstInst">Game version</label><select id="lDstInst"></select>
+          <label for="lDstAcct">Account</label><select id="lDstAcct"></select>
+          <label for="lDstLayout">Layout</label><select id="lDstLayout"></select>
+        </div>
+      </div>
+      <div class="row"><button class="secondary" id="lLoad">Fill both boxes below</button><span id="lLoadStatus" class="status"></span></div>
+      <p class="muted">Close the game first, or pick its layouts again afterwards. WoW only writes this file when you log out, so anything you changed in this session won't be here yet.</p>
+    </div>
+  </div>
   <div class="card">
     <h2><span class="step">1</span>Your layout</h2>
-    <p class="muted">In the game you're copying from, open Edit Mode (Esc > Edit Mode), select your layout, then use the layout menu > Export and paste it here.</p>
+    <p class="muted">In the game you're copying from, open Edit Mode (Esc > Edit Mode), select your layout, then use the layout menu > Export and paste it here. Or use the shortcut above.</p>
     <textarea id="lSrc" placeholder="Paste the layout you want to move"></textarea>
   </div>
   <div class="card">
@@ -186,7 +208,50 @@ a{color:var(--accent)}
     const header = tgt.header.slice(0, -1).concat(String(out.length));
     return { text: header.concat(...out).join(' '), report };
   }
-  const api = { parseLayout, convertLayout };
+  // WTF\Account\<acct>\edit-mode-cache-account.txt holds every layout the account
+  // has saved, not just one. Shape, worked out from real files in four installs:
+  //   <version> <settingCount> <settings...>
+  //   then per layout: <nameLength> <name> [<layoutType> only in version 4+] <entryCount> <entries...>
+  // The file ends with a null byte.
+  function parseLayoutCache(str) {
+    const bad = m => { throw new Error('That doesn\'t look like a WoW Edit Mode cache file' + (m ? ' (' + m + ')' : '') + '.'); };
+    const t = str.replace(/\0/g, '').trim().split(/\s+/);
+    let i = 0;
+    const version = t[i++];
+    const nSettings = parseInt(t[i++], 10);
+    if (!/^\d+$/.test(version || '') || isNaN(nSettings) || nSettings < 0) bad('bad header');
+    const settings = t.slice(i, i + nSettings); i += nSettings;
+    if (settings.length !== nSettings) bad('truncated settings');
+    const hasType = Number(version) >= 4; // version 4 carries a layout type, version 2 doesn't
+    const layouts = [];
+    while (i < t.length) {
+      const nameLen = parseInt(t[i++], 10);
+      if (isNaN(nameLen) || nameLen < 0) bad('bad layout name length');
+      // A layout name can contain spaces, so rebuild it until it's the stated length.
+      let name = '';
+      while (i < t.length && name.length < nameLen) name += (name ? ' ' : '') + t[i++];
+      if (name.length !== nameLen) bad('layout name does not match its stated length');
+      const type = hasType ? t[i++] : null;
+      const nEntries = parseInt(t[i++], 10);
+      if (isNaN(nEntries) || nEntries < 0) bad('bad entry count');
+      const flat = t.slice(i, i + nEntries * 10);
+      if (flat.length !== nEntries * 10) bad('truncated layout "' + name + '"');
+      i += nEntries * 10;
+      const entries = [];
+      for (let k = 0; k < flat.length; k += 10) entries.push(flat.slice(k, k + 10));
+      layouts.push({ name, type, entries });
+    }
+    return { version, settings, layouts };
+  }
+
+  // Turns one layout out of that file back into the string Edit Mode's Export gives you.
+  function cacheLayoutToString(version, layout) {
+    const n = String(layout.entries.length);
+    const header = Number(version) >= 4 ? [version, layout.type, n] : [version, n];
+    return header.concat(...layout.entries).join(' ');
+  }
+
+  const api = { parseLayout, convertLayout, parseLayoutCache, cacheLayoutToString };
   if (typeof module !== 'undefined') module.exports = api; else root.WoWLayout = api;
 })(this);
 
@@ -203,6 +268,7 @@ document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
 
 // ---------- Keybinds ----------
 const BIND = 'bindings-cache.wtf';
+const EDITMODE = 'edit-mode-cache-account.txt';
 let installs = []; // {name, wtf, accounts:[{name, dir, hasBind, chars:[{realm, name, dir, hasBind}]}]}
 
 if (!window.showDirectoryPicker) {
@@ -217,7 +283,16 @@ async function subdirs(dir) { const out = []; for await (const [n, h] of dir.ent
 const prettyInstall = n => ({ _retail_: 'Retail', _classic_: 'Classic', _classic_era_: 'Classic Era', _ptr_: 'Retail PTR', _beta_: 'Retail beta', _classic_beta_: 'Classic beta (WoW Forever beta)', _classic_ptr_: 'Classic PTR', _xptr_: 'Retail XPTR', _anniversary_: 'Classic Anniversary', _classic_era_ptr_: 'Classic Era PTR', _forever_: 'WoW Forever' }[n] || n) + (n.startsWith('_') ? ` (${n})` : '');
 
 async function scanAccount(name, dir) {
-  const acct = { name, dir, hasBind: !!(await tryFile(dir, BIND)), chars: [] };
+  const acct = { name, dir, hasBind: !!(await tryFile(dir, BIND)), chars: [], layoutVersion: null, layouts: [] };
+  // Saved Edit Mode layouts, so the HUD layout tab can offer them by name.
+  // Read only. A file we can't make sense of just means the paste boxes are used instead.
+  const cache = await readText(dir, EDITMODE);
+  if (cache) {
+    try {
+      const c = WoWLayout.parseLayoutCache(cache);
+      acct.layoutVersion = c.version; acct.layouts = c.layouts;
+    } catch { /* leave it empty, the paste flow still works */ }
+  }
   for (const [realm, rdir] of await subdirs(dir)) {
     if (realm === 'SavedVariables') continue;
     for (const [c, cdir] of await subdirs(rdir)) {
@@ -252,6 +327,7 @@ $('pick').onclick = async () => {
   $('dstInst').value = installs.findIndex((_, k) => k != $('srcInst').value) >= 0 ? installs.findIndex((_, k) => k != $('srcInst').value) : 0;
   ['chooseCard', 'goCard'].forEach(id => { $(id).style.opacity = 1; $(id).style.pointerEvents = 'auto'; });
   fillAccounts('src'); fillAccounts('dst');
+  initLayoutPickers();
   scanBackups();
   refreshBugLink();
 };
@@ -390,6 +466,55 @@ $('backupList').addEventListener('click', async e => {
 });
 const alertRow = (btn, err) => btn.closest('.brow').insertAdjacentHTML('beforeend', `<span class="err">Couldn't do that: ${err.message}. Is the game still running?</span>`);
 $('rescan').onclick = () => installs.length ? scanBackups() : $('pick').click();
+
+// ---------- HUD layout: load saved layouts from the folder ----------
+// Read only. Nothing here writes to edit-mode-cache-account.txt.
+const lCur = side => {
+  const i = installs[$(side + 'Inst').value];
+  const a = i && i.accounts[$(side + 'Acct').value];
+  return { i, a, l: a && a.layouts[$(side + 'Layout').value] };
+};
+function fillLayoutAccounts(side) {
+  const inst = installs[$(side + 'Inst').value];
+  const accts = inst ? inst.accounts : [];
+  $(side + 'Acct').innerHTML = accts.length
+    ? accts.map((a, k) => `<option value="${k}">${a.name}</option>`).join('')
+    : '<option value="">No accounts yet</option>';
+  fillLayoutNames(side);
+}
+function fillLayoutNames(side) {
+  const { a } = lCur(side);
+  const ls = a ? a.layouts : [];
+  $(side + 'Layout').innerHTML = ls.length
+    ? ls.map((l, k) => `<option value="${k}">${l.name} (${l.entries.length} elements)</option>`).join('')
+    : '<option value="">No saved layouts found</option>';
+}
+function initLayoutPickers() {
+  if (!installs.length) return;
+  $('lFolderHint').classList.add('hidden');
+  $('lFolderPickers').classList.remove('hidden');
+  const withLayouts = installs.filter(i => i.accounts.some(a => a.layouts.length));
+  for (const side of ['lSrc', 'lDst']) {
+    $(side + 'Inst').innerHTML = installs.map((i, k) => `<option value="${k}">${prettyInstall(i.name)}</option>`).join('');
+  }
+  // Default to two different versions that actually have layouts, if we can.
+  if (withLayouts.length) {
+    $('lSrcInst').value = installs.indexOf(withLayouts[0]);
+    $('lDstInst').value = installs.indexOf(withLayouts[withLayouts.length > 1 ? 1 : 0]);
+  }
+  fillLayoutAccounts('lSrc'); fillLayoutAccounts('lDst');
+}
+['lSrc', 'lDst'].forEach(s => {
+  $(s + 'Inst').onchange = () => fillLayoutAccounts(s);
+  $(s + 'Acct').onchange = () => fillLayoutNames(s);
+});
+$('lLoad').onclick = () => {
+  const from = lCur('lSrc'), to = lCur('lDst');
+  if (!from.l || !to.l) { $('lLoadStatus').innerHTML = '<span class="err">Pick a layout on both sides.</span>'; return; }
+  $('lSrc').value = WoWLayout.cacheLayoutToString(from.a.layoutVersion, from.l);
+  $('lTgt').value = WoWLayout.cacheLayoutToString(to.a.layoutVersion, to.l);
+  $('lLoadStatus').innerHTML = `<span class="ok">Loaded "${from.l.name}" and "${to.l.name}".</span>`;
+};
 
 // ---------- HUD layout ----------
 $('useForever').onclick = () => { $('lTgt').value = FOREVER_DEFAULT; };
