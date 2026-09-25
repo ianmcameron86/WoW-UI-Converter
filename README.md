@@ -47,5 +47,5 @@ If a version or account doesn't show up, log into that version once and log out 
 
 ## Notes
 
-- Needs Chrome or Edge on desktop, because they're the only browsers that let a web page open a folder. The HUD layout tab works in any browser.
+- Needs Chrome or Edge on desktop, because they let a web page open a folder. Brave works too once you turn on `brave://flags/#file-system-access-api` and restart it. Firefox and Safari can't open folders. The HUD layout tab works in any browser.
 - This is a fan-made tool and is not affiliated with or endorsed by Blizzard Entertainment.

@@ -198,7 +198,11 @@ document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
 const BIND = 'bindings-cache.wtf';
 let installs = []; // {name, wtf, accounts:[{name, dir, hasBind, chars:[{realm, name, dir, hasBind}]}]}
 
-if (!window.showDirectoryPicker) { $('unsupported').classList.remove('hidden'); $('pick').disabled = true; }
+if (!window.showDirectoryPicker) {
+  $('unsupported').classList.remove('hidden'); $('pick').disabled = true;
+  if (navigator.brave) $('unsupported').innerHTML = `<p class="err" style="margin-top:0">Brave turns off folder access by default.</p>
+    <p>To turn it on: copy <code>brave://flags/#file-system-access-api</code> into the address bar, set it to <strong>Enabled</strong>, restart Brave, then reload this page. Or open this page in Chrome or Edge. The HUD layout tab works either way.</p>`;
+}
 
 async function tryDir(dir, name) { try { return await dir.getDirectoryHandle(name); } catch { return null; } }
 async function tryFile(dir, name) { try { return await dir.getFileHandle(name); } catch { return null; } }
