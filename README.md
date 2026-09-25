@@ -47,11 +47,13 @@ If a version or account doesn't show up, log into that version once and log out 
 
 ## Found a bug?
 
-There's a **Report a bug** link at the bottom of the page. It opens a new GitHub issue with a few details already filled in: your browser, which game versions were found, and the shape of the layouts you converted (the header and how many elements, not the layouts themselves).
+Either open an issue here, or message me on Discord: **TheSaint**.
+
+There's a **Report a bug** link at the bottom of the page too. It opens a new GitHub issue with a few details already filled in: your browser, which game versions were found, and the shape of the layouts you converted (the header and how many elements, not the layouts themselves).
 
 It never includes your account name, character names, realm names, file paths, or any layout contents.
 
-You'll need a free GitHub account to post the issue.
+Posting an issue needs a free GitHub account. Discord doesn't, so use whichever is easier.
 
 ## Notes
 
